@@ -44,7 +44,7 @@ backend-spring/uploads/
 # Legacy prototypes and local design references
 page/
 blogProject_design/
-jhyeokblog/jhyeokblog-main/design/
-jhyeokblog/jhyeokblog-main/supabase/
+frontend-nextjs/design/
+frontend-nextjs/supabase/
 **/AGENTS.md
 **/CLAUDE.md

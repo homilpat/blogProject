@@ -185,7 +185,7 @@ docker compose logs --tail=100 rag-fastapi
 전체 Docker 서비스가 이미 실행 중이고 Next.js 화면만 개발 모드로 실행할 경우 다음 명령을 사용할 수 있습니다.
 
 ```powershell
-cd C:\Users\user\Desktop\blogProject\jhyeokblog\jhyeokblog-main
+cd C:\Users\user\Desktop\blogProject\frontend-nextjs
 npm.cmd install
 npm.cmd run dev
 ```

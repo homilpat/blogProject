@@ -184,7 +184,7 @@ rag-fastapi/app/services/
 
 ```text
 blogProject/
-├── jhyeokblog/jhyeokblog-main/  # Next.js 프런트엔드
+├── frontend-nextjs/              # Next.js 프런트엔드
 ├── backend-spring/               # Spring Boot 비즈니스 API
 ├── rag-fastapi/                  # FastAPI RAG 엔진
 ├── docker/mysql/init.sql         # MySQL 초기 스키마
