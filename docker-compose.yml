@@ -90,7 +90,7 @@ services:
   # 5. 블로그 웹 프론트엔드 (Next.js)
   frontend-blog:
     build:
-      context: ./jhyeokblog/jhyeokblog-main
+      context: ./frontend-nextjs
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL is required}
