@@ -41,6 +41,9 @@ Thumbs.db
 .uploads/
 backend-spring/uploads/
 
+# Local planning notes
+Task.md
+
 # Legacy prototypes and local design references
 page/
 blogProject_design/
