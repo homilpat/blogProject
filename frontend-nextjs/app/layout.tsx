@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ENGINEER_CORE | 제조지식창고",
-  description: "Manufacturing knowledge and RAG engineering portal",
+  title: "Knowledge Hub",
+  description: "근거 기반 제조 지식 검색 및 RAG 플랫폼",
 };
 
 export default function RootLayout({
