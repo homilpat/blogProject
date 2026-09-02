@@ -1,0 +1,9 @@
+.env
+.env.*
+node_modules/
+.next/
+out/
+*.pem
+*.key
+secrets/
+.git/
