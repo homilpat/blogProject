@@ -1,0 +1,50 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.p12
+*.jks
+
+# Database runtime data, dumps, and user content
+database/
+dumps/
+backups/
+uploads/
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+
+# Local/private knowledge source files
+게시물/*.docx
+게시물/~$*.docx
+*.hwp
+
+# Build outputs and dependencies
+**/node_modules/
+**/.next/
+**/build/
+**/.gradle/
+**/__pycache__/
+*.pyc
+
+# Local tools, logs, and IDE files
+Docker Desktop Installer.exe
+*.log
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+.uploads/
+backend-spring/uploads/
+
+# Legacy prototypes and local design references
+page/
+blogProject_design/
+jhyeokblog/jhyeokblog-main/design/
+jhyeokblog/jhyeokblog-main/supabase/
+**/AGENTS.md
+**/CLAUDE.md
