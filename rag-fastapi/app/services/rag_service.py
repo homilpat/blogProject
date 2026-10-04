@@ -24,6 +24,7 @@ from app.services.novelty_judge import novelty_judge
 from app.services.query_planner import query_planner
 from app.services.vector_store import vector_store
 from app.services.web_search import web_search_service
+from app.services.web_search_policy import web_search_fallback_policy
 
 logger = logging.getLogger(__name__)
 
@@ -509,24 +510,29 @@ class RAGService:
         ))
         retrieval_mode = req.retrieval_mode
         web_attempted = False
-        if not evidence.has_evidence and req.allow_web_search:
+        initial_web_decision = web_search_fallback_policy.decide(
+            allow_web_search=req.allow_web_search,
+            has_internal_evidence=evidence.has_evidence,
+            web_attempted=web_attempted,
+        )
+        if initial_web_decision.should_search:
             web_attempted = True
             stage_start = time.time()
-            evidence = self._web_evidence(plan.search_query, req.top_k)
+            web_evidence = self._web_evidence(plan.search_query, req.top_k)
+            evidence = web_search_fallback_policy.merge(evidence, web_evidence)
             retrieval_mode = f"{req.retrieval_mode}+web_fallback"
             trace.append(TraceStep(
                 name="web_search_fallback",
                 latency_ms=int((time.time() - stage_start) * 1000),
                 detail=(
-                    f"self-hosted SearXNG: {len(evidence.sources)} sources"
-                    if evidence.has_evidence
+                    f"{initial_web_decision.reason}; "
+                    f"self-hosted SearXNG: {len(web_evidence.sources)} sources"
+                    if web_evidence.has_evidence
                     else "self-hosted SearXNG: no usable source"
                 ),
             ))
         sources = evidence.sources
-        using_web_sources = bool(sources) and all(
-            source.source_type == "WEB" for source in sources
-        )
+        using_web_sources = any(source.source_type == "WEB" for source in sources)
         web_source_policy = (
             "웹 검색 근거는 검색 결과에 표시된 요약 범위만 사용하세요. 링크의 전체 내용을 읽었다고 가정하지 말고, "
             "요약에 없는 세부 수치·날짜·조건을 보완하지 마세요. 웹 정보임을 답변에서 한 번 자연스럽게 밝히세요. "
@@ -598,6 +604,67 @@ class RAGService:
                 )
                 coverage = structured.coverage
                 missing_points = structured.missing_points
+
+                # Internal-first policy:
+                # 1) complete internal evidence => never call web search
+                # 2) partial internal evidence => search only for the missing aspects
+                # 3) merge internal + web evidence and re-assess once
+                gap_web_decision = web_search_fallback_policy.decide(
+                    allow_web_search=req.allow_web_search,
+                    has_internal_evidence=bool(sources),
+                    coverage=coverage,
+                    missing_points=missing_points,
+                    web_attempted=web_attempted,
+                )
+                if gap_web_decision.should_search:
+                    web_attempted = True
+                    stage_start = time.time()
+                    gap_query = web_search_fallback_policy.gap_query(
+                        plan.search_query,
+                        missing_points,
+                    )
+                    web_evidence = self._web_evidence(gap_query, req.top_k)
+                    trace.append(TraceStep(
+                        name="web_search_gap_fill",
+                        latency_ms=int((time.time() - stage_start) * 1000),
+                        detail=(
+                            f"{gap_web_decision.reason}; "
+                            f"query={gap_query}; "
+                            f"{len(web_evidence.sources)} web sources"
+                        ),
+                    ))
+                    if web_evidence.has_evidence:
+                        evidence = web_search_fallback_policy.merge(
+                            evidence,
+                            web_evidence,
+                        )
+                        sources = evidence.sources
+                        retrieval_mode = f"{req.retrieval_mode}+web_gap_fill"
+                        using_web_sources = True
+                        web_source_policy = (
+                            "웹 검색 근거는 검색 결과에 표시된 요약 범위만 사용하세요. "
+                            "링크의 전체 내용을 읽었다고 가정하지 말고, "
+                            "요약에 없는 세부 수치·날짜·조건을 보완하지 마세요. "
+                            "웹 정보임을 답변에서 한 번 자연스럽게 밝히세요. "
+                        )
+                        stage_start = time.time()
+                        structured = evidence_structurer.structure(
+                            llm_client=self.llm_client,
+                            model=settings.PLANNER_MODEL or settings.LLM_MODEL,
+                            plan=plan,
+                            sources=sources,
+                        )
+                        coverage = structured.coverage
+                        missing_points = structured.missing_points
+                        trace.append(TraceStep(
+                            name="evidence_reassessment",
+                            latency_ms=int((time.time() - stage_start) * 1000),
+                            detail=(
+                                f"{coverage}: internal+web evidence "
+                                f"reassessed once"
+                            ),
+                        ))
+
                 selected_sources = evidence_structurer.select_sources(structured, sources)
                 trace.append(TraceStep(
                     name="evidence_structuring",
